@@ -1,0 +1,52 @@
+Instructions:
+
+To install the tools, you need g++ compiler, a simple way to build the binary code would be:
+
+g++ basecalibration.cpp -o basecalibration.o
+g++ baseprint.cpp -o baseprint.o
+
+then put these two binary file to your PATH folder.
+
+the program use samtools, the tool can be downloaded from 
+http://samtools.sourceforge.net/
+
+The program works in two steps, basecalibration.o for parameter estimation, and generate a recalibration file.
+then baseprint.o process your data with the help of the recalibration file generated from the first step.
+
+an example of command:
+
+basecalibration.o trainingset_reference.fa <(samtools view trainingset.bam ) trainingset_exclusion_pos.hsd recali_segreg.txt readln
+samtools view -bo testingset_out.bam -S <( samtools view -h testingset_in.bam | basereprint.o recali_segreg.txt readln ) 
+
+
+trainingset_reference.fa:
+	The basecalibration.o need a well studied genome as the training set. since circular genome such as phix174 is often used as control seq,
+	the program need you add first 1000 bases to the end in the reference. the program will automatically collapse reads that mapping to these regions.
+	Additionally, any difference from the reference will be handled as the sequence error, if your phix174 strain is different from the reference
+	please replace such variants and use the consensus as the reference.
+	
+	phix174_rep.fa is an example.
+	
+trainingset_exclusion_pos.hsd:
+	There are still some positions are true minor allele, we use hsd file to exclude these positions, it has four fixed field separately by tab,
+	from the fifth field, it specify minor alleles with position followed by minor allele. the position is 1-based.
+	
+	phix.hsd is an example.
+	
+trainingset.bam:
+	it is the training set. it need sorted by name so that reads from the same pair-ended reads are next to each other. no secondary alignment
+	and only proper mapped reads are used (defined by flag in the bam file)
+	
+recali_segreg.txt:
+	a temperary file to bridge two program. it is the output of the basecalibration.o and the input of basereprint.o
+	
+readln:
+	the length of your read. please note, your traingset and testingset need to be have the same legnth of the read, and don't take any cutoff 
+	on the read length in running the program
+	
+testingset_in.bam:
+	the file your want to do base recalibration
+
+testingset_out.bam
+	the output after base recalibration.
+
